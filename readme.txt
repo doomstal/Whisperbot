@@ -7,3 +7,6 @@ whisperbot.py is for logging into servers with no select world dialogue.
 whisperbot2 is for servers like the main that have a choice. it chooses the first one, by default.
 for help and support, contact someone else. 
 				-Mistakes
+
+original author forum thread:
+http://forums.themanaworld.org/viewtopic.php?f=12&t=11712
