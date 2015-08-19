@@ -52,9 +52,9 @@ packet_lengths = [
     8, 14, 10, 35,  6,  8,  4, 11, 54, 53, 60,  2, -1, 47, 33,  6,
    30,  8, 34, 14,  2,  6, 26,  2, 28, 81,  6, 10, 26,  2, -1, -1,
    -1, -1, 20, 10, 32,  9, 34, 14,  2,  6, 48, 56, -1,  4,  5, 10,
-#0x2000
+#0x0200
    26,  0,  0,  0, 18,  0,  0,  0,  0,  0,  0, 19,  0,  0,  0,  0,
-    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+    0,  0,  0,  0,  0,  -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
 ]
 
 class PacketBuffer:
@@ -101,7 +101,7 @@ def main():
     login = socket.socket()
     login.connect((server, port))
     print("login connected")
-    login.sendall("\x64\0\0\0\0\0%s%s\0" %
+    login.sendall("\x64\0\0\0\0\0%s%s\02" %
                   (account.ljust(24, '\0'), password.ljust(24, '\0')))
 
     pb = PacketBuffer()
@@ -114,6 +114,10 @@ def main():
             break
         pb.feed(data)
         for packet in pb:
+            if packet.startswith("\x6a\0"): # login error
+                print("login error")
+                exit()
+
             if packet.startswith("\x69\0"): # login succeeded
                 id1, accid, id2 = struct.unpack("<LLL", packet[4:16])
                 sex = ord(packet[46])
@@ -130,7 +134,7 @@ def main():
     char = socket.socket()
     char.connect((charip, charport))
     print("char connected")
-    char.sendall("\x65\0%s\0\0%s" % (struct.pack("<LLL", accid, id1, id2), chr(sex)))
+    char.sendall("\x65\0%s\0\01%s" % (struct.pack("<LLL", accid, id1, id2), chr(sex)))
     char.recv(4)
 
     pb = PacketBuffer()
@@ -143,6 +147,10 @@ def main():
             break
         pb.feed(data)
         for packet in pb:
+            if packet.startswith("\x6a\0"): # login error
+                print("login error")
+                exit()
+
             if packet.startswith("\x6b\0"):
                 char.sendall("\x66\0%s" % chr(character))
             elif packet.startswith("\x71\0"):
