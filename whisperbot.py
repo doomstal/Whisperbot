@@ -174,6 +174,7 @@ def main():
 
     pb = PacketBuffer()
     gotresponse = set()
+    names = dict()
     while True:
         data = mapserv.recv(1500)
         if not data:
@@ -183,7 +184,21 @@ def main():
             if packet.startswith("\x73\0"): # connected
                 mapserv.sendall("\x7d\0") # map loaded
                 mapserv.sendall("\x89\0\0\0\0\0\x02") # sit
-            elif packet.startswith("\x97\0"):
+            elif (packet.startswith("\x78\0") # being visible
+              or packet.startswith("\x7b\0") # being move
+              or packet.startswith("\xd8\01") # player update 1
+              or packet.startswith("\xd9\01") # player update 2
+              or packet.startswith("\xda\01")): # player move
+                id = struct.unpack("<L", packet[2:6])[0]
+                job = struct.unpack("<H", packet[14:16])[0]
+                if job <= 25 or (job >= 4001 and job <= 4049): # player
+                    if id not in names:
+                        mapserv.sendall("\x94\0%s" % (struct.pack("<L", id))) # name request
+            elif packet.startswith("\x95\0"): # name response
+                id = struct.unpack("<L", packet[2:6])[0]
+                nick = packet[6:28].rstrip("\0")
+                names[id] = nick
+            elif packet.startswith("\x97\0"): # whisper
                 nick = packet[4:28].rstrip("\0")
                 message = packet[28:]
                 if nick == master:
@@ -199,7 +214,11 @@ def main():
                 if "automaticly banned for spam" in message:
                     time.sleep(3)
             elif packet.startswith("\x8d\0"): # char speech
+                id = struct.unpack("<L", packet[4:8])[0]
                 message = packet[8:]
+                if id in names:
+                    nick = names[id]
+                    message = nick + ": " + message
                 mapserv.sendall(whisper(master, message))
                 time.sleep(0.5)
 
