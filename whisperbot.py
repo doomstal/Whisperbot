@@ -201,7 +201,8 @@ def main():
             elif packet.startswith("\x80\0"): # being remove
                 id = struct.unpack("<L", packet[2:6])[0]
                 if ord(packet[6:7]) != 1:
-                    del names[id]
+                    if id in names:
+                        del names[id]
             elif packet.startswith("\x97\0"): # whisper
                 nick = packet[4:28].rstrip("\0")
                 message = packet[28:]
